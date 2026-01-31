@@ -52,7 +52,7 @@
 
   <script>
     const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get("user") || Date.now(); // identificador temporal
+    const userId = urlParams.get("user") || Date.now();
 
     async function send() {
       const code = document.getElementById("paypal").value.trim();
@@ -60,7 +60,6 @@
 
       document.getElementById("status").innerText = "⏳ Esperando verificación del dueño...";
 
-      // Enviar solicitud al backend
       const res = await fetch("/api/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -76,7 +75,6 @@
     }
 
     async function checkKey() {
-      // Revisa cada 5 segundos si la key ya fue generada
       const interval = setInterval(async () => {
         const res = await fetch(`/api/key?userId=${userId}`);
         const data = await res.json();
