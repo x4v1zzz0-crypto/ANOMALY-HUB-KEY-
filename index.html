@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Anomaly Hub Key</title>
+  <title>ANOMALY HUB KEY SYSTEM</title>
   <style>
     body {
-      background-color: #0b0d23; /* azul marino */
+      background-color: #0b0d23;
       color: white;
       font-family: Arial, sans-serif;
       display: flex;
@@ -12,18 +12,11 @@
       justify-content: center;
       align-items: center;
       height: 100vh;
-      margin: 0;
       text-align: center;
+      margin: 0;
     }
-
-    h1 {
-      margin-bottom: 10px;
-    }
-
-    p {
-      margin: 5px 0;
-    }
-
+    h1 { margin-bottom: 10px; }
+    p { margin: 5px 0; }
     input {
       padding: 10px;
       width: 250px;
@@ -33,10 +26,9 @@
       font-size: 16px;
       text-align: center;
     }
-
     button {
       padding: 10px 20px;
-      background-color: #1e40af; /* azul más claro */
+      background-color: #1e40af;
       color: white;
       border: none;
       border-radius: 5px;
@@ -44,16 +36,9 @@
       cursor: pointer;
       margin-top: 10px;
     }
-
-    button:hover {
-      background-color: #2563eb;
-    }
-
-    #status {
-      margin-top: 15px;
-      font-size: 14px;
-      color: #fffa;
-    }
+    button:hover { background-color: #2563eb; }
+    #status { margin-top: 15px; font-size: 14px; color: #fffa; }
+    #key { margin-top: 20px; font-size: 18px; font-weight: bold; color: #00ffdd; }
   </style>
 </head>
 <body>
@@ -62,32 +47,45 @@
   <input id="paypal" placeholder="Código PayPal">
   <br>
   <button onclick="send()">Verify</button>
-
   <p id="status"></p>
+  <p id="key"></p>
 
   <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const userId = urlParams.get("user") || Date.now(); // identificador temporal
+
     async function send() {
       const code = document.getElementById("paypal").value.trim();
-
-      if (!code) {
-        alert("Ingresa un código PayPal válido");
-        return;
-      }
+      if (!code) { alert("Ingresa un código PayPal válido"); return; }
 
       document.getElementById("status").innerText = "⏳ Esperando verificación del dueño...";
 
-      // Envía a tu backend
+      // Enviar solicitud al backend
       const res = await fetch("/api/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paypal: code })
+        body: JSON.stringify({ paypal: code, userId })
       });
 
       if (res.ok) {
         document.getElementById("status").innerText = "✅ Código enviado. Espera verificación en Discord.";
+        checkKey();
       } else {
         document.getElementById("status").innerText = "❌ Error al enviar. Intenta de nuevo.";
       }
+    }
+
+    async function checkKey() {
+      // Revisa cada 5 segundos si la key ya fue generada
+      const interval = setInterval(async () => {
+        const res = await fetch(`/api/key?userId=${userId}`);
+        const data = await res.json();
+        if (data.key) {
+          clearInterval(interval);
+          document.getElementById("status").innerText = "✅ Verificado!";
+          document.getElementById("key").innerText = data.key;
+        }
+      }, 5000);
     }
   </script>
 </body>
