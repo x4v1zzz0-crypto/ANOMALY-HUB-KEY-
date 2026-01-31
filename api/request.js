@@ -7,7 +7,6 @@ export default async function handler(req, res) {
   }
   global.sentUsers.push(userId);
 
-  // Enviar mensaje a Discord con botón Verify
   await fetch(process.env.DISCORD_WEBHOOK, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -22,7 +21,7 @@ export default async function handler(req, res) {
         components: [{
           type: 2,
           label: "Verify",
-          style: 5, // link
+          style: 5,
           url: `https://TU-PROYECTO.vercel.app?user=${userId}`
         }]
       }]
