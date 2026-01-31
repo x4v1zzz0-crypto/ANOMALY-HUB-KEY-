@@ -1,34 +1,93 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>Generate Key</title>
+  <title>Anomaly Hub Key</title>
+  <style>
+    body {
+      background-color: #0b0d23; /* azul marino */
+      color: white;
+      font-family: Arial, sans-serif;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+      margin: 0;
+      text-align: center;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    p {
+      margin: 5px 0;
+    }
+
+    input {
+      padding: 10px;
+      width: 250px;
+      margin: 10px 0;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+      text-align: center;
+    }
+
+    button {
+      padding: 10px 20px;
+      background-color: #1e40af; /* azul más claro */
+      color: white;
+      border: none;
+      border-radius: 5px;
+      font-size: 16px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+
+    button:hover {
+      background-color: #2563eb;
+    }
+
+    #status {
+      margin-top: 15px;
+      font-size: 14px;
+      color: #fffa;
+    }
+  </style>
 </head>
 <body>
-  <h2>GENERATE KEY</h2>
-
-  <input id="paypal" placeholder="PayPal Gift Code ($2)">
-  <br><br>
-  <button onclick="send()">Enviar</button>
+  <h1>ANOMALY HUB KEY SYSTEM</h1>
+  <p>Pon tu código de PayPal de 2$ o más (tarjeta de regalo)</p>
+  <input id="paypal" placeholder="Código PayPal">
+  <br>
+  <button onclick="send()">Verify</button>
 
   <p id="status"></p>
 
   <script>
     async function send() {
-      const code = document.getElementById("paypal").value;
+      const code = document.getElementById("paypal").value.trim();
 
       if (!code) {
-        alert("Ingresa el código PayPal");
+        alert("Ingresa un código PayPal válido");
         return;
       }
 
-      document.getElementById("status").innerText =
-        "⏳ Esperando verificación del dueño...";
+      document.getElementById("status").innerText = "⏳ Esperando verificación del dueño...";
 
-      await fetch("/api/request", {
+      // Envía a tu backend
+      const res = await fetch("/api/request", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ paypal: code })
       });
+
+      if (res.ok) {
+        document.getElementById("status").innerText = "✅ Código enviado. Espera verificación en Discord.";
+      } else {
+        document.getElementById("status").innerText = "❌ Error al enviar. Intenta de nuevo.";
+      }
     }
   </script>
 </body>
