@@ -1,16 +1,23 @@
 export default async function handler(req, res) {
+  if (req.method !== "POST") {
+    return res.status(405).json({ error: "Method not allowed" });
+  }
+
   const { paypal } = req.body;
 
   await fetch(process.env.DISCORD_WEBHOOK, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json"
+    },
     body: JSON.stringify({
-      embeds: [{
-        title: "🟢 NUEVA SOLICITUD DE KEY",
-        description:
-          `💳 Código PayPal:\n\`\`\`${paypal}\`\`\`\n\nEstado: ⏳ Pendiente`,
-        color: 0x00ff00
-      }]
+      embeds: [
+        {
+          title: "🟢 NUEVA SOLICITUD DE KEY",
+          description: `💳 Código PayPal:\n\`\`\`\n${paypal}\n\`\`\`\n\nEstado: ⏳ Pendiente`,
+          color: 0x00ff00
+        }
+      ]
     })
   });
 
