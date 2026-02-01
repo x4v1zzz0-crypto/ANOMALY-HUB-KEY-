@@ -1,53 +1,90 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ANOMALY HUB KEY</title>
+<style>
+  body {
+    margin: 0;
+    padding: 0;
+    background-color: #0b1a3d;
+    color: white;
+    font-family: sans-serif;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 100vh;
+  }
+  h1 {
+    font-size: 2rem;
+    text-align: center;
+    margin-bottom: 20px;
+  }
+  input, button {
+    width: 90%;
+    max-width: 400px;
+    padding: 12px;
+    margin: 8px 0;
+    font-size: 16px;
+    border-radius: 6px;
+    border: none;
+    box-sizing: border-box;
+  }
+  button {
+    background-color: #1a73e8;
+    color: white;
+    cursor: pointer;
+  }
+  p {
+    font-size: 18px;
+    text-align: center;
+  }
+  @media(min-width: 768px){
+    h1 { font-size: 3rem; }
+    input, button { font-size: 18px; }
+  }
+</style>
+</head>
+<body>
+<h1>ANOMALY HUB KEY</h1>
+<p>Ingresa tu código de PayPal</p>
 <input type="text" id="userCode" placeholder="Código de pago">
-<button onclick="submitCode()">ENVIAR</button>
-<button onclick="useKey()">USAR KEY</button>
+<button onclick="submitCode()">VERIFY</button>
 <p id="result"></p>
 
 <script>
-const deviceId = localStorage.getItem("deviceId") || (localStorage.setItem("deviceId", "device-" + Math.random().toString(36).substring(2,10)), localStorage.getItem("deviceId"));
+  // Generar un ID único por dispositivo
+  if(!localStorage.getItem("deviceId")){
+    localStorage.setItem("deviceId", "device-" + Math.random().toString(36).substring(2,10));
+  }
+  const deviceId = localStorage.getItem("deviceId");
 
-async function submitCode() {
-  const code = document.getElementById("userCode").value;
-  const result = document.getElementById("result");
+  async function submitCode() {
+    const code = document.getElementById("userCode").value;
+    const result = document.getElementById("result");
 
-  if(!code) return result.innerText = "❌ Pon un código válido";
+    if(!code || code.length < 5) return result.innerText = "❌ Pon un código válido";
 
-  result.innerText = "⏳ Enviando para verificación...";
+    result.innerText = "⏳ Enviando para verificación...";
 
-  const res = await fetch("/api/generate-key", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code, deviceId, action: "submit" })
-  });
+    try {
+      const res = await fetch("/api/generate-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ code, deviceId, action: "submit" })
+      });
+      const data = await res.json();
 
-  const data = await res.json();
-  if(data.status === "pending") result.innerText = "⏳ Esperando verificación del administrador.";
-  else if(data.status === "done") result.innerText = "✅ Tu key ya está lista: " + data.key;
-  else result.innerText = "❌ " + data.error;
-}
-
-async function useKey() {
-  const result = document.getElementById("result");
-
-  const res = await fetch("/api/generate-key", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ deviceId, action: "use" })
-  });
-
-  const data = await res.json();
-  if(data.key) result.innerText = "✅ Key en uso: " + data.key;
-  else result.innerText = "❌ " + data.error;
-}
-
-async function releaseKey() {
-  const res = await fetch("/api/generate-key", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ deviceId, action: "release" })
-  });
-
-  const data = await res.json();
-  document.getElementById("result").innerText = data.status || data.error;
-}
+      if(data.status === "pending") result.innerText = "⏳ Esperando verificación del administrador...";
+      else if(data.status === "done") result.innerText = "✅ Tu key ya está lista: " + data.key;
+      else result.innerText = "❌ " + data.error;
+    } catch(err){
+      console.error(err);
+      result.innerText = "❌ Error al enviar el código";
+    }
+  }
 </script>
+</body>
+</html>
