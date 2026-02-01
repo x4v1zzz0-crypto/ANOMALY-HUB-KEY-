@@ -1,5 +1,3 @@
-import fetch from "node-fetch";
-
 export default async function handler(req, res) {
   const { userId, verified } = req.body;
 
@@ -10,6 +8,7 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: "Ya tienes una key" });
   }
 
+  // fetch ya está disponible en Node 18+, no usar import
   const response = await fetch(
     "https://api.nexus.gg/v1/key-groups/PAYPAL_KEYS/generate",
     {
@@ -23,6 +22,6 @@ export default async function handler(req, res) {
   );
 
   const data = await response.json();
-  global.generatedKeys[userId] = data.key;
+  global.generatedKeys[userId] = data.key; // guarda temporalmente
   res.status(200).json({ key: data.key });
 }
