@@ -1,65 +1,29 @@
 const fetch = require("node-fetch");
 
-let pendingKeys = {}; // deviceId => { code, status:"pending"|"done", key, inUse }
-
+// Pon tu webhook aquí
 const WEBHOOK_URL = "https://discord.com/api/webhooks/1447268606726639867/rbLol3db3UPeu2FnwLqWGFqbDl3jpI4IyChajEKLfhbjTy4Ml_328XKaous2UAl9WfyZ";
 
-async function handler(req,res){
-  if(req.method !== "POST") return res.status(405).json({error:"Método no permitido"});
+async function handler(req, res) {
+  if (req.method !== "POST") return res.status(405).json({ error: "Método no permitido" });
 
-  const { code, deviceId, action } = req.body;
-  if(!deviceId) return res.status(400).json({error:"No hay deviceId"});
+  const { message, user } = req.body;
 
-  if(action==="submit"){
-    if(!code || code.length<5) return res.status(400).json({error:"Código inválido"});
-    
-    if(pendingKeys[deviceId] && pendingKeys[deviceId].status==="done"){
-      return res.status(200).json({status:"done", key: pendingKeys[deviceId].key});
-    }
-    if(pendingKeys[deviceId]) return res.status(200).json({status:"pending"});
+  if (!message || !user) return res.status(400).json({ error: "Faltan datos" });
 
-    pendingKeys[deviceId] = { code, status:"pending", key:null, inUse:false };
-
-    // enviar a webhook
-    await fetch(WEBHOOK_URL,{
-      method:"POST",
-      headers:{"Content-Type":"application/json"},
+  try {
+    await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
-        content: `💳 Nuevo código recibido para verificar:\nDevice ID: ${deviceId}\nCódigo: ${code}`
+        content: `📩 Nuevo mensaje de ${user}:\n${message}`
       })
     });
 
-    return res.status(200).json({status:"pending"});
+    return res.status(200).json({ status: "enviado" });
+  } catch (err) {
+    console.error(err);
+    return res.status(500).json({ error: "No se pudo enviar al webhook" });
   }
-
-  else if(action==="use"){
-    if(!pendingKeys[deviceId] || pendingKeys[deviceId].status!=="done")
-      return res.status(400).json({error:"Key no disponible"});
-    if(pendingKeys[deviceId].inUse)
-      return res.status(400).json({error:"Key ya está en uso"});
-    pendingKeys[deviceId].inUse=true;
-    return res.status(200).json({key: pendingKeys[deviceId].key});
-  }
-
-  else if(action==="release"){
-    if(pendingKeys[deviceId]){
-      pendingKeys[deviceId].inUse=false;
-      return res.status(200).json({status:"liberada"});
-    }
-    return res.status(400).json({error:"Key no existe"});
-  }
-
-  else return res.status(400).json({error:"Acción inválida"});
 }
 
-// función que tu bot de Discord llamará con /verify <deviceId>
-function verifyDevice(deviceId){
-  if(!pendingKeys[deviceId] || pendingKeys[deviceId].status!=="pending") return null;
-  const key = "ANOMALY-"+Math.random().toString(36).substring(2,10).toUpperCase();
-  pendingKeys[deviceId].status="done";
-  pendingKeys[deviceId].key=key;
-  pendingKeys[deviceId].inUse=false;
-  return key;
-}
-
-module.exports = { handler, verifyDevice };
+module.exports = { handler };
