@@ -47,7 +47,7 @@ async function submitCode(){
   result.innerText="⏳ Enviando para verificación...";
 
   try{
-    const res = await fetch("/api/generate-key",{
+    const res = await fetch("/api/generate-key.js",{
       method:"POST",
       headers:{"Content-Type":"application/json"},
       body:JSON.stringify({code,deviceId,action:"submit"})
