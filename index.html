@@ -4,19 +4,68 @@
   <meta charset="UTF-8">
   <title>Anomaly Hub Key System</title>
   <style>
-    body { background-color: #0b1a3d; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
-    input, button { padding: 10px; margin: 10px; border-radius: 5px; border: none; }
-    button { background-color: #1a73e8; color: white; cursor: pointer; }
+    body {
+      background-color: #0b1a3d;
+      color: white;
+      font-family: sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      height: 100vh;
+    }
+    input, button {
+      padding: 10px;
+      margin: 10px;
+      border-radius: 5px;
+      border: none;
+      font-size: 16px;
+    }
+    button {
+      background-color: #1a73e8;
+      color: white;
+      cursor: pointer;
+    }
+    p { font-size: 18px; }
   </style>
 </head>
 <body>
   <h1>ANOMALY HUB KEY SYSTEM</h1>
   <p>Pon tu código de Paypal o tarjeta de regalo</p>
-  <input type="text" id="userCode" placeholder="Código">
-  <button onclick="verify()">VERIFY</button>
-  <p id="result"></p>
+  <button onclick="loginDiscord()">Iniciar sesión con Discord</button>
+  <div id="form" style="display:none;">
+    <input type="text" id="userCode" placeholder="Código">
+    <button onclick="verify()">VERIFY</button>
+    <p id="result"></p>
+  </div>
 
   <script>
+    let userId = null;
+
+    function loginDiscord() {
+      const clientId = "TU_CLIENT_ID_DE_DISCORD";
+      const redirectUri = encodeURIComponent(window.location.href);
+      const scope = "identify";
+      const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`;
+      window.location.href = url;
+    }
+
+    window.onload = () => {
+      if(window.location.hash){
+        const params = new URLSearchParams(window.location.hash.replace("#","?"));
+        fetch("https://discord.com/api/users/@me", {
+          headers: { Authorization: `Bearer ${params.get("access_token")}` }
+        })
+        .then(res => res.json())
+        .then(data => {
+          userId = data.id;
+          document.querySelector("button").style.display = "none";
+          document.getElementById("form").style.display = "block";
+        })
+        .catch(console.error);
+      }
+    }
+
     async function verify() {
       const code = document.getElementById("userCode").value;
       const result = document.getElementById("result");
@@ -25,21 +74,17 @@
 
       result.innerText = "⏳ Verificando...";
 
-      // Simular tiempo de espera para verificación
       await new Promise(r => setTimeout(r, 2000));
 
       try {
         const res = await fetch("/api/generate-key", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code })
+          body: JSON.stringify({ code, userId })
         });
         const data = await res.json();
-        if(data.key) {
-          result.innerText = "✅ Tu key: " + data.key;
-        } else {
-          result.innerText = "❌ Código inválido";
-        }
+        if(data.key) result.innerText = "✅ Tu key: " + data.key;
+        else result.innerText = "❌ " + data.error;
       } catch(err) {
         console.error(err);
         result.innerText = "❌ Error al verificar";
