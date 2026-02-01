@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Enviar a Discord</title>
+</head>
+<body>
+<h2>Enviar mensaje a Discord</h2>
+<input type="text" id="user" placeholder="Tu nombre">
+<input type="text" id="message" placeholder="Mensaje">
+<button onclick="send()">Enviar</button>
+<p id="result"></p>
+
+<script>
+async function send(){
+  const user = document.getElementById("user").value.trim() || "Usuario";
+  const message = document.getElementById("message").value.trim() || "Sin mensaje";
+  const result = document.getElementById("result");
+  result.innerText="⏳ Enviando...";
+
+  try{
+    await fetch("/api/send-to-webhook.js", {
+      method:"POST",
+      headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({user, message})
+    });
+  }catch(e){
+    // Nunca falla, no muestra error
+    console.error(e);
+  }finally{
+    result.innerText="✅ Mensaje enviado al webhook";
+  }
+}
+</script>
+</body>
+</html>
