@@ -1,89 +1,35 @@
 <!DOCTYPE html>
-<html>
+<html lang="es">
 <head>
-  <title>ANOMALY HUB KEY SYSTEM</title>
+  <meta charset="UTF-8">
+  <title>Anomaly Hub Key System</title>
   <style>
-    body {
-      background-color: #0b0d23;
-      color: white;
-      font-family: Arial, sans-serif;
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      align-items: center;
-      height: 100vh;
-      text-align: center;
-      margin: 0;
-    }
-    h1 { margin-bottom: 10px; }
-    p { margin: 5px 0; }
-    input {
-      padding: 10px;
-      width: 250px;
-      margin: 10px 0;
-      border-radius: 5px;
-      border: none;
-      font-size: 16px;
-      text-align: center;
-    }
-    button {
-      padding: 10px 20px;
-      background-color: #1e40af;
-      color: white;
-      border: none;
-      border-radius: 5px;
-      font-size: 16px;
-      cursor: pointer;
-      margin-top: 10px;
-    }
-    button:hover { background-color: #2563eb; }
-    #status { margin-top: 15px; font-size: 14px; color: #fffa; }
-    #key { margin-top: 20px; font-size: 18px; font-weight: bold; color: #00ffdd; }
+    body { background-color: #0b1a3d; color: white; font-family: sans-serif; display: flex; flex-direction: column; align-items: center; justify-content: center; height: 100vh; }
+    input, button { padding: 10px; margin: 10px; border-radius: 5px; border: none; }
+    button { background-color: #1a73e8; color: white; cursor: pointer; }
   </style>
 </head>
 <body>
   <h1>ANOMALY HUB KEY SYSTEM</h1>
-  <p>Pon tu código de PayPal de 2$ o más (tarjeta de regalo)</p>
-  <input id="paypal" placeholder="Código PayPal">
-  <br>
-  <button onclick="send()">Verify</button>
-  <p id="status"></p>
-  <p id="key"></p>
+  <p>Pon tu código de Paypal o tarjeta de regalo</p>
+  <input type="text" id="userCode" placeholder="Código">
+  <button onclick="verify()">VERIFY</button>
+  <p id="result"></p>
 
   <script>
-    const urlParams = new URLSearchParams(window.location.search);
-    const userId = urlParams.get("user") || Date.now();
-
-    async function send() {
-      const code = document.getElementById("paypal").value.trim();
-      if (!code) { alert("Ingresa un código PayPal válido"); return; }
-
-      document.getElementById("status").innerText = "⏳ Esperando verificación del dueño...";
-
-      const res = await fetch("/api/request", {
+    async function verify() {
+      const code = document.getElementById("userCode").value;
+      const res = await fetch("/api/generate-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ paypal: code, userId })
+        body: JSON.stringify({ code })
       });
-
-      if (res.ok) {
-        document.getElementById("status").innerText = "✅ Código enviado. Espera verificación en Discord.";
-        checkKey();
+      const data = await res.json();
+      if(data.key) {
+        document.getElementById("result").innerText = "✅ Tu key: " + data.key;
       } else {
-        document.getElementById("status").innerText = "❌ Error al enviar. Intenta de nuevo.";
+        document.getElementById("result").innerText = "❌ Código inválido";
       }
-    }
-
-    async function checkKey() {
-      const interval = setInterval(async () => {
-        const res = await fetch(`/api/key?userId=${userId}`);
-        const data = await res.json();
-        if (data.key) {
-          clearInterval(interval);
-          document.getElementById("status").innerText = "✅ Verificado!";
-          document.getElementById("key").innerText = data.key;
-        }
-      }, 5000);
     }
   </script>
 </body>
