@@ -41,23 +41,24 @@ if(!localStorage.getItem("deviceId")){
 const deviceId = localStorage.getItem("deviceId");
 
 async function submitCode(){
-  const code = document.getElementById("userCode").value;
+  const code = document.getElementById("userCode").value.trim();
   const result = document.getElementById("result");
-  if(!code || code.length<5) return result.innerText="❌ Pon un código válido";
-  result.innerText="⏳ Enviando para verificación...";
+  if(!code || code.length<5) return result.innerText="❌ Código inválido";
 
+  result.innerText="⏳ Enviando al administrador...";
   try{
-    const res = await fetch("/api/generate-key.js",{
+    const res = await fetch("/api/generate-key", {
       method:"POST",
       headers:{"Content-Type":"application/json"},
-      body:JSON.stringify({code,deviceId,action:"submit"})
+      body: JSON.stringify({ code, deviceId, action:"submit" })
     });
     const data = await res.json();
-    if(data.status==="pending") result.innerText="⏳ Esperando verificación del administrador...";
-    else if(data.status==="done") result.innerText="✅ Tu key ya está lista: "+data.key;
+
+    if(data.status==="pending") result.innerText="⏳ Esperando tu verificación en Discord...";
+    else if(data.status==="done") result.innerText="✅ Tu key: "+data.key;
     else result.innerText="❌ "+data.error;
-  }catch(err){
-    console.error(err);
+  }catch(e){
+    console.error(e);
     result.innerText="❌ Error al enviar el código";
   }
 }
