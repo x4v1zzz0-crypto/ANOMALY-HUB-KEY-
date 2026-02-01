@@ -1,95 +1,53 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-  <meta charset="UTF-8">
-  <title>Anomaly Hub Key System</title>
-  <style>
-    body {
-      background-color: #0b1a3d;
-      color: white;
-      font-family: sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      height: 100vh;
-    }
-    input, button {
-      padding: 10px;
-      margin: 10px;
-      border-radius: 5px;
-      border: none;
-      font-size: 16px;
-    }
-    button {
-      background-color: #1a73e8;
-      color: white;
-      cursor: pointer;
-    }
-    p { font-size: 18px; }
-  </style>
-</head>
-<body>
-  <h1>ANOMALY HUB KEY SYSTEM</h1>
-  <p>Pon tu código de Paypal o tarjeta de regalo</p>
-  <button onclick="loginDiscord()">Iniciar sesión con Discord</button>
-  <div id="form" style="display:none;">
-    <input type="text" id="userCode" placeholder="Código">
-    <button onclick="verify()">VERIFY</button>
-    <p id="result"></p>
-  </div>
+<input type="text" id="userCode" placeholder="Código de pago">
+<button onclick="submitCode()">ENVIAR</button>
+<button onclick="useKey()">USAR KEY</button>
+<p id="result"></p>
 
-  <script>
-    let userId = null;
+<script>
+const deviceId = localStorage.getItem("deviceId") || (localStorage.setItem("deviceId", "device-" + Math.random().toString(36).substring(2,10)), localStorage.getItem("deviceId"));
 
-    function loginDiscord() {
-      const clientId = "TU_CLIENT_ID_DE_DISCORD";
-      const redirectUri = encodeURIComponent(window.location.href);
-      const scope = "identify";
-      const url = `https://discord.com/api/oauth2/authorize?client_id=${clientId}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}`;
-      window.location.href = url;
-    }
+async function submitCode() {
+  const code = document.getElementById("userCode").value;
+  const result = document.getElementById("result");
 
-    window.onload = () => {
-      if(window.location.hash){
-        const params = new URLSearchParams(window.location.hash.replace("#","?"));
-        fetch("https://discord.com/api/users/@me", {
-          headers: { Authorization: `Bearer ${params.get("access_token")}` }
-        })
-        .then(res => res.json())
-        .then(data => {
-          userId = data.id;
-          document.querySelector("button").style.display = "none";
-          document.getElementById("form").style.display = "block";
-        })
-        .catch(console.error);
-      }
-    }
+  if(!code) return result.innerText = "❌ Pon un código válido";
 
-    async function verify() {
-      const code = document.getElementById("userCode").value;
-      const result = document.getElementById("result");
+  result.innerText = "⏳ Enviando para verificación...";
 
-      if(!code) return result.innerText = "❌ Pon un código válido";
+  const res = await fetch("/api/generate-key", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code, deviceId, action: "submit" })
+  });
 
-      result.innerText = "⏳ Verificando...";
+  const data = await res.json();
+  if(data.status === "pending") result.innerText = "⏳ Esperando verificación del administrador.";
+  else if(data.status === "done") result.innerText = "✅ Tu key ya está lista: " + data.key;
+  else result.innerText = "❌ " + data.error;
+}
 
-      await new Promise(r => setTimeout(r, 2000));
+async function useKey() {
+  const result = document.getElementById("result");
 
-      try {
-        const res = await fetch("/api/generate-key", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ code, userId })
-        });
-        const data = await res.json();
-        if(data.key) result.innerText = "✅ Tu key: " + data.key;
-        else result.innerText = "❌ " + data.error;
-      } catch(err) {
-        console.error(err);
-        result.innerText = "❌ Error al verificar";
-      }
-    }
-  </script>
-</body>
-</html>
+  const res = await fetch("/api/generate-key", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceId, action: "use" })
+  });
+
+  const data = await res.json();
+  if(data.key) result.innerText = "✅ Key en uso: " + data.key;
+  else result.innerText = "❌ " + data.error;
+}
+
+async function releaseKey() {
+  const res = await fetch("/api/generate-key", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ deviceId, action: "release" })
+  });
+
+  const data = await res.json();
+  document.getElementById("result").innerText = data.status || data.error;
+}
+</script>
