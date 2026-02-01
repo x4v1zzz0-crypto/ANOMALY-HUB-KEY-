@@ -1,45 +1,52 @@
-// Estado temporal en memoria
-let pendingKeys = {};  // deviceId => { code, status: "pending" | "done", key, inUse }
+let pendingKeys = {}; // deviceId => { code, status: "pending" | "done", key, inUse }
 
-export default function handler(req, res){
+// Tu webhook de Discord
+const WEBHOOK_URL = "https://discord.com/api/webhooks/1447268606726639867/rbLol3db3UPeu2FnwLqWGFqbDl3jpI4IyChajEKLfhbjTy4Ml_328XKaous2UAl9WfyZ";
+
+export default async function handler(req, res){
   if(req.method !== "POST") return res.status(405).json({ error: "Método no permitido" });
 
   const { code, deviceId, action } = req.body;
-
   if(!deviceId) return res.status(400).json({ error: "No hay dispositivo identificado" });
 
-  // Acción: "submit" = enviar código, "use" = usar key
-  if(action === "submit") {
+  if(action === "submit"){
     if(!code || code.length < 5) return res.status(400).json({ error: "Código inválido" });
 
-    if(pendingKeys[deviceId] && pendingKeys[deviceId].status === "done") {
+    if(pendingKeys[deviceId] && pendingKeys[deviceId].status === "done"){
       return res.status(200).json({ status: "done", key: pendingKeys[deviceId].key });
     }
-
-    if(pendingKeys[deviceId]) {
+    if(pendingKeys[deviceId]){
       return res.status(200).json({ status: "pending" });
     }
 
     // Guardar como pendiente
     pendingKeys[deviceId] = { code, status: "pending", key: null, inUse: false };
+
+    // Enviar al webhook de Discord
+    await fetch(WEBHOOK_URL, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        content: `💳 Nuevo código recibido para verificar:\nDevice ID: ${deviceId}\nCódigo: ${code}`
+      })
+    });
+
     return res.status(200).json({ status: "pending" });
   }
 
-  else if(action === "use") {
-    if(!pendingKeys[deviceId] || pendingKeys[deviceId].status !== "done") {
+  else if(action === "use"){
+    if(!pendingKeys[deviceId] || pendingKeys[deviceId].status !== "done"){
       return res.status(400).json({ error: "Key no disponible o no verificada" });
     }
-
-    if(pendingKeys[deviceId].inUse) {
+    if(pendingKeys[deviceId].inUse){
       return res.status(400).json({ error: "Key ya está en uso por otro usuario" });
     }
-
     pendingKeys[deviceId].inUse = true;
     return res.status(200).json({ key: pendingKeys[deviceId].key });
   }
 
-  else if(action === "release") {
-    if(pendingKeys[deviceId]) {
+  else if(action === "release"){
+    if(pendingKeys[deviceId]){
       pendingKeys[deviceId].inUse = false;
       return res.status(200).json({ status: "liberada" });
     }
@@ -51,7 +58,7 @@ export default function handler(req, res){
   }
 }
 
-// Función que el bot de Discord llamará para verificar
+// Función que tu bot de Discord llamará con /verify <deviceId>
 export function verifyDevice(deviceId){
   if(!pendingKeys[deviceId] || pendingKeys[deviceId].status !== "pending") return null;
 
