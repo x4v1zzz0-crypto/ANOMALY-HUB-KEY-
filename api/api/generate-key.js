@@ -1,30 +1,18 @@
-module.exports = async (req, res) => {
-  try {
-    const { userId, verified } = req.body;
-    if (!verified) return res.status(403).json({ error: "No verificado" });
+export default function handler(req, res) {
+  if(req.method === "POST") {
+    const { code } = req.body;
 
-    global.generatedKeys = global.generatedKeys || {};
-    if (global.generatedKeys[userId]) return res.status(400).json({ error: "Ya tienes una key" });
+    // Validar el código de pago (ejemplo simple)
+    if(!code || code.length < 5) {
+      return res.status(400).json({ error: "Código inválido" });
+    }
 
-    const response = await fetch(
-      "https://api.nexus.gg/v1/key-groups/PAYPAL_KEYS/generate",
-      {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${process.env.NEXUS_API_KEY}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ notes: `Usuario ${userId}` })
-      }
-    );
+    // Generar una key única
+    const key = "ANOMALY-" + Math.random().toString(36).substring(2, 10).toUpperCase();
 
-    if (!response.ok) return res.status(500).json({ error: "Error generando key en Nexus" });
-
-    const data = await response.json();
-    global.generatedKeys[userId] = data.key;
-    res.status(200).json({ key: data.key });
-  } catch (e) {
-    console.log(e);
-    res.status(500).json({ error: "Error interno" });
+    // Devolver la key al usuario
+    res.status(200).json({ key });
+  } else {
+    res.status(405).json({ error: "Método no permitido" });
   }
-};
+}
