@@ -1,4 +1,4 @@
-export default async function handler(req, res) {
+module.exports = async (req, res) => {
   const { paypal, userId } = req.body;
 
   global.sentUsers = global.sentUsers || [];
@@ -29,4 +29,4 @@ export default async function handler(req, res) {
   });
 
   res.status(200).json({ ok: true });
-}
+};
