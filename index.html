@@ -19,16 +19,30 @@
   <script>
     async function verify() {
       const code = document.getElementById("userCode").value;
-      const res = await fetch("/api/generate-key", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ code })
-      });
-      const data = await res.json();
-      if(data.key) {
-        document.getElementById("result").innerText = "✅ Tu key: " + data.key;
-      } else {
-        document.getElementById("result").innerText = "❌ Código inválido";
+      const result = document.getElementById("result");
+
+      if(!code) return result.innerText = "❌ Pon un código válido";
+
+      result.innerText = "⏳ Verificando...";
+
+      // Simular tiempo de espera para verificación
+      await new Promise(r => setTimeout(r, 2000));
+
+      try {
+        const res = await fetch("/api/generate-key", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ code })
+        });
+        const data = await res.json();
+        if(data.key) {
+          result.innerText = "✅ Tu key: " + data.key;
+        } else {
+          result.innerText = "❌ Código inválido";
+        }
+      } catch(err) {
+        console.error(err);
+        result.innerText = "❌ Error al verificar";
       }
     }
   </script>
