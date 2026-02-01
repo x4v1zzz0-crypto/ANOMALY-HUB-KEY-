@@ -1,21 +1,19 @@
+let keysByUser = {};
+
 export default function handler(req, res) {
-  if(req.method === "POST") {
-    const { code } = req.body;
+  if(req.method !== "POST") return res.status(405).json({ error: "Método no permitido" });
 
-    // Validación simple del código
-    if(!code || code.length < 5) {
-      return res.status(400).json({ error: "Código inválido" });
-    }
+  const { code, userId } = req.body;
 
-    // Simular verificación en “servidor”
-    // Aquí podrías añadir validación real, por ejemplo consultar tu base de datos o API de Paypal
+  if(!code || code.length < 5) return res.status(400).json({ error: "Código inválido" });
+  if(!userId) return res.status(400).json({ error: "No hay usuario identificado" });
 
-    // Generar key única
-    const key = "ANOMALY-" + Math.random().toString(36).substring(2, 10).toUpperCase();
-
-    // Retornar la key
-    return res.status(200).json({ key });
-  } else {
-    res.status(405).json({ error: "Método no permitido" });
+  if(keysByUser[userId]) {
+    return res.status(200).json({ error: "Ya generaste una key: " + keysByUser[userId] });
   }
+
+  const key = "ANOMALY-" + Math.random().toString(36).substring(2,10).toUpperCase();
+  keysByUser[userId] = key;
+
+  res.status(200).json({ key });
 }
